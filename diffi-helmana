@@ -1,0 +1,155 @@
+#include "Diffi-Hellmen.h"
+
+// Функция для вычисления (a^exp) % mod
+int32_t mod_exp(int32_t a, int32_t exp, int32_t mod) {
+    int32_t result = 1;
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            result = (result * a) % mod;
+        }
+        a = (a * a) % mod;
+        exp /= 2;
+    }
+    return result;
+}
+
+// Функция для генерации случайного числа в диапазоне [min, max]
+int32_t  random_number(int32_t min, int32_t max) {
+    return min + rand() % ((max + 1) - min);
+}
+
+// Функция для шифрования/дешифрования текста с использованием XOR
+string xor_encrypt_decrypt(const string& text, char key) {
+    string result = text;
+    for (size_t i = 0; i < text.size(); ++i) {
+        result[i] = text[i] ^ key;
+    }
+    return result;
+}
+
+void  MenuDiffi_Hellman()
+{
+    // Инициализация генератора случайных чисел
+    srand( time(0));
+
+    // Публичные параметры
+    int32_t prostoeshislo = 23;  // Простое число
+    int32_t koren = 5;   // Примитивный корень
+
+    // Частные ключи
+    int32_t shastnikeyA = random_number(1, prostoeshislo - 1);
+    cout << shastnikeyA << "Частный ключ абонента А\n";
+
+    int32_t shastnikeyB = random_number(1, prostoeshislo - 1);
+    cout << shastnikeyB << "Частный ключ абонента B\n\n";
+
+    // Публичные ключи
+    int32_t publickeyA = mod_exp(koren, shastnikeyA, prostoeshislo);
+    cout << publickeyA << "Публичный ключ абонента А\n";
+
+    int32_t publickeyB = mod_exp(koren, shastnikeyA, prostoeshislo);
+    cout << publickeyB << "Публичный ключ абонента B\n";
+
+    // Общий секретный ключ
+    int32_t key_a = mod_exp(publickeyA, shastnikeyA, prostoeshislo);
+    int32_t key_b = mod_exp(publickeyA, shastnikeyA, prostoeshislo);
+
+    // Проверка совпадения ключей
+    while (true) {
+        try {
+            cout << "---------------------------------\n";
+
+            if (key_a == key_b) {
+                char shared_key = static_cast<char>(key_a % 256);  // Преобразование ключа в байт (0-255)
+
+                string inputText;
+                cout << "Введите текст для шифрования: ";
+                cin >> inputText;
+
+                string putFile;
+                string putFileN;
+                cout << "Введите путь до файла для дешифровки";
+                cin >> putFile;
+
+                for (char c : putFile)
+                {
+                    putFileN += c;
+                    if (c == '\\')
+                    {
+                        putFileN += '\\';
+                    }
+
+                }
+
+                // Шифрование текста
+                // Открытие файла для записи зашифрованного текста
+                ofstream outputFile(putFileN);
+                        if (!outputFile.is_open()) {
+                            throw runtime_error("Не удалось открыть файл для записи.\n");
+                        }
+                string encryptedText;
+                
+                encryptedText = xor_encrypt_decrypt(inputText, shared_key);
+                outputFile << encryptedText;
+                outputFile.close();
+
+                cout << "Зашифрованный текст сохранен в файл \n" << putFileN;
+                cout << "Зашифрованный текст: " << encryptedText << "\n";
+                cout << "---------------------------------\n";
+
+                // Открытие файла для чтения зашифрованного текста
+                ifstream inputFile(putFileN);
+                if (!inputFile.is_open()) {
+                    throw runtime_error("Не удалось открыть файл для чтения.\n");
+                }
+
+                // Дешифрование текста
+                string decryptedText = xor_encrypt_decrypt(encryptedText, shared_key);
+
+                // Дешифрование текста
+                string putFiles;
+                string putFileNn;
+                cout << "Введите путь до файла для дешифровки";
+                cin >> putFiles;
+
+                for (char c : putFiles)
+                {
+                    putFileNn += c;
+                    if (c == '\\')
+                    {
+                        putFileNn += '\\';
+                    }
+
+                }
+
+                // Открытие файла для записи расшифрованного текста
+                ofstream decryptedFile(putFileNn);
+                if (!decryptedFile.is_open()) {
+                    throw runtime_error("Не удалось открыть файл для записи.\n");
+                }
+                
+                decryptedFile << decryptedText;
+                decryptedFile.close();
+
+                cout << "Расшифрованный текст сохранен в файл decryptDiffi-hellman.txt\n";
+                cout << "Расшифрованный текст: " << decryptedText << endl;
+                cout << "---------------------------------\n";
+            }
+            else {
+                cout << "Ошибка: ключи не совпадают." << endl;
+            }
+        }
+        catch (const invalid_argument& e)
+        {
+            cerr << "Ошибка: " << e.what();
+            break; 
+        }
+        catch (const runtime_error& e)
+        {
+            cerr << "Ошибка: " << e.what();
+            break; 
+        }
+
+
+    }
+}
